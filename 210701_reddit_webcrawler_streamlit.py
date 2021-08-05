@@ -15,6 +15,7 @@ import praw # Reddit
 # Time
 import time
 from datetime import datetime
+import dateutil.relativedelta
 
 # Processing
 import re
@@ -28,7 +29,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-
 ###### INFO
 st.title('Reddit Webcrawler :spider:')
 st.warning(
@@ -38,12 +38,11 @@ st.warning(
  You can download crawled Reddit posts and comments data in various Excel formats.
  
  **Config**  
- Subreddits, Search Keywords, Filter Words: Multiple inputs allowed  
+ Subreddits, Search Keywords, Filter Words: Multiple inputs allowed (sep=",")  
  Filename: Name of the final Excel file  
  Search In: Choose between 3. (OR option)
  """
 )
-
 
 
 ###### PRAW Session
@@ -57,43 +56,31 @@ reddit = praw.Reddit(client_id=reddit_id,
                      requestor_kwargs={'session': session})
 
 
-
 ###### Config Inputs
-
 topic = st.sidebar.text_input('Select Subreddits:', "all")
 topic = '+'.join([x.strip() for x in topic.split(',')])
 if topic=="":
-    topic="all"
+    topic="all" # default
 
 search_keywords = st.sidebar.text_input('Search Keywords:')
 search_keywords = [x.strip() for x in search_keywords.split(',')]
 
 sort_type = st.sidebar.selectbox('Sort Type:', ['new', 'relevance', 'hot', 'top'])
 
-import dateutil.relativedelta
 start_date = st.sidebar.date_input('Start Date:', datetime.today().date()-dateutil.relativedelta.relativedelta(months=1)).strftime("%Y-%m-%d")
 end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime("%Y-%m-%d")
 
 save_id = st.sidebar.text_input('Filename:')
-
 
 filter_keywords = st.sidebar.text_input('Filter Words:')
 filter_keywords = [x.strip() for x in filter_keywords.split(',')]
 if filter_keywords=="":
     filter_keywords=None
 
-
 search_in = st.sidebar.multiselect('Search In:', ['comment_text', 'title', 'text'], default=["comment_text"])  
 
-# topic = 'all'
-# search_keywords = ["LG Energy Solution battery", "LG Chem battery"]
-# sort_type = 'new'
-# start_date, end_date =  "2021-06-23", "2021-07-23"
 time_filter = 'all' # default
 num_posts = None # default
-# save_id = 'lg_battery'
-# filter_keywords = ['LG'] #중복 가능 예시: ['lg', 'Tesla', 'battery', 'batteries']
-# search_in = ['comment_text'] #중복 가능 예시: ['title', 'text']
 
 if 'run' not in st.session_state:
     st.session_state['run'] = False
@@ -101,9 +88,7 @@ if st.sidebar.button('Crawl!'):
     st.session_state['run'] = True
 
 
-
 ###### Functions
-
 @st.cache
 def get_reddit_submissions(reddit, search_keywords, topic='all', 
                            sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
@@ -138,7 +123,6 @@ def get_reddit_comments(reddit, submission_df):
     for i, r in submission_df.iterrows():
         comment_submission = reddit.submission(url=submission_df["permalink"][i])
         comment_submission.comments.replace_more(limit=0)
-
         for comment in comment_submission.comments.list():
             comment_rows.append([submission_df["permalink"][i],
             comment.author, 
@@ -164,33 +148,7 @@ def make_regex(filter_keywords):
     return filter_string
 
 def get_relevent_comments(all_df, regex, search_in=['comment_text']):
-    temp_post = None
     string_df = all_df[all_df[search_in].apply(lambda x: x.str.contains(regex, na = False, regex=True, case=False)).any(axis=1)]
-
-#     if ['comment_text']==search_in:
-#         st.write("Number of comments: {}".format(string_df.shape[0]))
-#     else:
-#         st.write("Number of posts: {}".format(string_df['title'].nunique()))
-    
-#     for i, r in string_df.iterrows():        
-#         if temp_post != string_df['text'][i]:
-#             temp_post = string_df['text'][i]
-            
-#             st.write("""
-#             ***
-#             ## **ID {}. POST /r/{} | {}**
-#             """.format(i, string_df['topic'][i], string_df['created'][i].strftime("%y-%m-%d")))
-#             st.write('### TITLE:',string_df['title'][i])
-
-#             if temp_post == "":
-#                 st.write(string_df['url'][i])
-#             else:
-#                 st.write(string_df['text'][i])
-#         if re.search(regex, str(string_df['comment_text'][i]).lower()):
-#             st.write("""
-#                 ### ID {}. COMMENT | {}
-#                 """.format(i, string_df['comment_created'][i].strftime("%y-%m-%d")))
-#             st.write(string_df['comment_text'][i])
     return string_df
 
 def get_report(string_df, regex, search_in=['comment_text']):
@@ -199,17 +157,14 @@ def get_report(string_df, regex, search_in=['comment_text']):
         st.write("Number of comments: {}".format(string_df.shape[0]))
     else:
         st.write("Number of posts: {}".format(string_df['title'].nunique()))
-    
     for i, r in string_df.iterrows():        
         if temp_post != string_df['text'][i]:
             temp_post = string_df['text'][i]
-            
             st.write("""
             ---
             ## **ID {}. POST /r/{} | {}**
             """.format(i, string_df['topic'][i], string_df['created'][i].strftime("%y-%m-%d")))
             st.write('### TITLE:',string_df['title'][i])
-
             if temp_post == "":
                 st.write(string_df['url'][i])
             else:
@@ -220,16 +175,14 @@ def get_report(string_df, regex, search_in=['comment_text']):
                 """.format(i, string_df['comment_created'][i].strftime("%y-%m-%d")))
             st.write(string_df['comment_text'][i])
 
+# Wordcloud
 @st.cache
 def create_wordcloud(long_string):
     long_string = re.sub(r'[^\w\s \n]',' ',long_string)
-
-    ## WORDCLOUD
     wordcloud = WordCloud(background_color="white", 
                           width=1000, height=1000,
                           min_word_length=2,
                           max_words=300, contour_width=3, contour_color='steelblue', prefer_horizontal=0.95)
-
     wordcloud.generate(long_string)
     return wordcloud
 
@@ -252,32 +205,25 @@ def get_table_download_link(df, filename):
     """
     val = make_excel(df)
     b64 = base64.b64encode(val)  # val looks like b'...'
-    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">{filename}</a>' # decode b'abc' => abc
+    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">{filename}</a>'
 
 def save_reddit(save_id, start_date, end_date, submission_df=None, comment_df=None, all_df=None, string_df=None, filter_keywords=None, search_in=None):
-
     save_id_date = save_id+'_'+datetime.strftime(datetime.strptime(start_date, '%Y-%m-%d'), '%y%m%d')+'-'+datetime.strftime(datetime.strptime(end_date, '%Y-%m-%d'), '%y%m%d')
-    
     if submission_df is not None:
         st.markdown(get_table_download_link(submission_df, "{}_{}_reddit_posts.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
-
     if comment_df is not None:    
         st.markdown(get_table_download_link(comment_df, "{}_{}_reddit_comments.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
-
     if all_df is not None:
         st.markdown(get_table_download_link(all_df, "{}_{}_reddit_all.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
         st.markdown(get_table_download_link(all_df.set_index(['search_word', 'topic', 'title', 'username', 'upvotes', 'id', 
                       'url', 'permalink', 'num_comments', 'created', 'text', 'comment_text']), "{}_{}_reddit_all_merged.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
-
     if string_df is not None:
         st.markdown(get_table_download_link(string_df, "{}_{}_reddit_filtered_{}_{}.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date, filter_keywords, search_in)), unsafe_allow_html=True)
         
-        
-            
+
 ###### RUN
 
 if st.session_state['run']:
-
     status_text = st.text('Crawling Reddit posts...')
     submission_df = get_reddit_submissions(reddit=reddit, search_keywords=search_keywords, topic=topic, 
                                sort_type=sort_type, time_filter=time_filter, num_posts = num_posts, 
@@ -321,11 +267,14 @@ if st.session_state['run']:
     if st.checkbox('Create WordCloud'):
         st.write('## WordCloud of Filtered :cloud::')
         long_string = ','.join(string_df[string_df['text'].duplicated()]['text'].astype(str)) + ','.join(string_df['comment_text'].astype(str))
-        wordcloud = create_wordcloud(long_string)
-        fig, ax = plt.subplots()
-        ax.imshow(wordcloud)
-        ax.axis("off") 
-        st.pyplot(fig)
+        if len(long_string)>0:
+            wordcloud = create_wordcloud(long_string)
+            fig, ax = plt.subplots()
+            ax.imshow(wordcloud)
+            ax.axis("off") 
+            st.pyplot(fig)
+        else:
+            st.write('No words in WordCloud :cry:')
 
     if st.checkbox('Show Filtered'):
         st.write('## Filtered Posts & Comments:')
