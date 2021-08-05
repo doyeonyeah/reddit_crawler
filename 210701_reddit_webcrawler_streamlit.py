@@ -77,7 +77,7 @@ end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime(
 save_id = st.sidebar.text_input('Filename:')
 
 
-filter_keywords = st.sidebar.text_input('Filter Words:','LG')
+filter_keywords = st.sidebar.text_input('Filter Words:')
 filter_keywords = [x.strip() for x in filter_keywords.split(',')]
 if filter_keywords=="":
     filter_keywords=None
