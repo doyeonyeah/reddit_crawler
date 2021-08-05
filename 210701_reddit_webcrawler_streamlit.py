@@ -1,7 +1,6 @@
 import streamlit as st
 
 from dy_crawler.config import *
-# from dy_crawler.utils import *
 
 # Basic
 import pandas as pd
@@ -12,10 +11,6 @@ import requests
 session = requests.Session()
 session.verify = False # Disable SSL
 import praw # Reddit
-# from selenium import webdriver
-# from selenium.webdriver.common.keys import Keys
-# from selenium.webdriver.support.ui import Select
-# from bs4 import BeautifulSoup
 
 # Time
 import time
@@ -70,7 +65,7 @@ topic = '+'.join([x.strip() for x in topic.split(',')])
 if topic=="":
     topic="all"
 
-search_keywords = st.sidebar.text_input('Search Keywords:', "LG Energy Solution battery, LG Chem battery")
+search_keywords = st.sidebar.text_input('Search Keywords:')
 search_keywords = [x.strip() for x in search_keywords.split(',')]
 
 sort_type = st.sidebar.selectbox('Sort Type:', ['new', 'relevance', 'hot', 'top'])
@@ -79,7 +74,7 @@ import dateutil.relativedelta
 start_date = st.sidebar.date_input('Start Date:', datetime.today().date()-dateutil.relativedelta.relativedelta(months=1)).strftime("%Y-%m-%d")
 end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime("%Y-%m-%d")
 
-save_id = st.sidebar.text_input('Filename:','lg_battery')
+save_id = st.sidebar.text_input('Filename:')
 
 
 filter_keywords = st.sidebar.text_input('Filter Words:','LG')
