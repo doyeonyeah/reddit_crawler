@@ -1,0 +1,7 @@
+requests
+praw>=7.4.0
+wordcloud>=1.8.1
+streamlit>=0.86.0
+pandas>=1.2.3
+regex
+matplotlib
