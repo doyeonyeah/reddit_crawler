@@ -27,6 +27,14 @@ from wordcloud import WordCloud
 import warnings
 warnings.filterwarnings("ignore")
 
+st.secrets["db_username"])
+st.write("DB password:", st.secrets["db_password"])
+
+reddit_id = st.secrets["reddit_id"]
+reddit_secret = st.secrets["reddit_secret
+reddit_agent = st.secrets["reddit_agent"]
+reddit_username = st.secrets["reddit_username"]
+reddit_password = st.secrets["reddit_password"]
 
 st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_sidebar_state='auto')
 
