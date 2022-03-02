@@ -70,7 +70,7 @@ query = st.sidebar.text_input('Search Query:')
 save_id = query.translate(str.maketrans(' ', '_', string.punctuation))
 query = [x.strip() for x in query.split(',')]
 
-sort_type = st.sidebar.selectbox('Sort Type:', ['new', 'relevance', 'hot', 'top'])
+sort_type = st.sidebar.selectbox('Sort Type:', ['relevance', 'new', 'hot', 'top'])
 
 start_date = st.sidebar.date_input('Start Date:', datetime.today().date()-dateutil.relativedelta.relativedelta(months=1)).strftime("%Y-%m-%d")
 end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime("%Y-%m-%d")
