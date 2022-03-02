@@ -1,12 +1,5 @@
 import streamlit as st
 
-# from dy_crawler.config import *
-reddit_id = 'SagnXh9a5PEAtQ'
-reddit_secret = 'cbn07L2utSllBH7jFVKyIp4e2G_1Cg'
-reddit_agent = 'sorrycrawler'
-reddit_username = 'thisisacompanyid'
-reddit_password = 'l1g2e3s4'
-
 # Basic
 import pandas as pd
 import numpy as np
