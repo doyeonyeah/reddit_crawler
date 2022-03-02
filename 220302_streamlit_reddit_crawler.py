@@ -40,7 +40,7 @@ st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_si
 st.title('Reddit Webcrawler :spider:')
 st.warning(
  """
- **Ver. 220302_1.5**   
+ **Ver. 220302_1.2**   
  This is the Streamlit version of the Reddit crawler.  
  You can download crawled Reddit posts and comments data in various formats.
  
@@ -101,6 +101,10 @@ def reddit_2_str(df):
     return df
 
 @st.cache(allow_output_mutation=True)
+def cache_dfs(submission_df, comment_df):
+    return submission_df, comment_df
+
+# @st.cache(allow_output_mutation=True)
 def get_reddit_submissions(reddit, query, topic='all', 
                            sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
     subreddit = reddit.subreddit(topic)
@@ -128,7 +132,7 @@ def get_reddit_submissions(reddit, query, topic='all',
         submission_df = submission_df[submission_df['created']<=(end_date+" 23:59:59")].reset_index(drop=True)
     return reddit_2_str(submission_df)
 
-@st.cache(allow_output_mutation=True)
+# @st.cache(allow_output_mutation=True)
 def get_reddit_comments(reddit, submission_df):
     comment_rows = []
     for i, r in submission_df.iterrows():
@@ -238,7 +242,7 @@ if st.session_state['run']:
     status_text.text(f'Done, Number of comments: {comment_df.shape[0]}')
     time.sleep(2)
     status_text.text(f'Number of posts: {submission_df.shape[0]}, Number of comments: {comment_df.shape[0]}')
-
+    submission_df, comment_df = cache_dfs(submission_df, comment_df)
     all_df = pd.merge(submission_df, comment_df, on='permalink', how='outer')
 
     string_df = get_relevent_comments(all_df, make_regex(filter_keywords), search_in)
