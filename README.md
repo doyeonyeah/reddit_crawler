@@ -2,4 +2,10 @@
 
 Streamlit version  
 Set up a streamlit server for your personal reddit crawler.  
-requires dy_crawler/config.py edit
+
+The followings are required:
+- Reddit ID
+- Reddit Secret
+- Reddit Agent
+- Reddit Username
+- Reddit Password
