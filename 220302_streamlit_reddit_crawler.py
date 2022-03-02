@@ -40,7 +40,7 @@ st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_si
 st.title('Reddit Webcrawler :spider:')
 st.warning(
  """
- **Ver. 220302_1.2**   
+ **Ver. 220302_1.3**   
  This is the Streamlit version of the Reddit crawler.  
  You can download crawled Reddit posts and comments data in various formats.
  
