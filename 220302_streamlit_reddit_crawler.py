@@ -100,11 +100,7 @@ def reddit_2_str(df):
             df[col] = df[col].astype(str)
     return df
 
-@st.cache(allow_output_mutation=True)
-def cache_dfs(submission_df, comment_df):
-    return submission_df, comment_df
-
-# @st.cache(allow_output_mutation=True)
+@st.cache
 def get_reddit_submissions(reddit, query, topic='all', 
                            sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
     subreddit = reddit.subreddit(topic)
@@ -132,7 +128,7 @@ def get_reddit_submissions(reddit, query, topic='all',
         submission_df = submission_df[submission_df['created']<=(end_date+" 23:59:59")].reset_index(drop=True)
     return reddit_2_str(submission_df)
 
-# @st.cache(allow_output_mutation=True)
+@st.cache
 def get_reddit_comments(reddit, submission_df):
     comment_rows = []
     for i, r in submission_df.iterrows():
@@ -186,7 +182,7 @@ def get_report(string_df, regex, search_in=['comment_text']):
             st.write(string_df['comment_text'][i])
 
 # Wordcloud
-@st.cache
+@st.cache(show_spinner=False)
 def create_wordcloud(long_string):
     long_string = re.sub(r'[^\w\s \n]',' ',long_string)
     wordcloud = WordCloud(background_color="white", 
@@ -225,12 +221,11 @@ def save_reddit(save_id, start_date, end_date, submission_df=None, comment_df=No
                       'url', 'permalink', 'num_comments', 'created', 'text', 'comment_text']), "{}_{}_all_merged.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
     if string_df is not None:
         st.markdown(get_table_download_link(string_df, "{}_{}_filtered_{}_{}.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date, filter_keywords, search_in)), unsafe_allow_html=True)
-        
 
-###### RUN
 
-if st.session_state['run']:
-    status_text = st.text('Crawling Reddit posts...')
+@st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)
+def run(reddit, query, topic, sort_type, time_filter, num_posts, start_date, end_date):
+    status_text.text('Crawling Reddit posts...')
     submission_df = get_reddit_submissions(reddit=reddit, query=query, topic=topic, 
                                sort_type=sort_type, time_filter=time_filter, num_posts = num_posts, 
                            start_date=start_date, end_date=end_date)
@@ -241,8 +236,16 @@ if st.session_state['run']:
     comment_df = get_reddit_comments(reddit=reddit, submission_df=submission_df)
     status_text.text(f'Done, Number of comments: {comment_df.shape[0]}')
     time.sleep(2)
+    return submission_df, comment_df
+        
+        
+###### RUN
+
+if st.session_state['run']:
+    status_text = st.text('')
+    submission_df, comment_df = run(reddit, query, topic, sort_type, time_filter, num_posts, start_date, end_date)
     status_text.text(f'Number of posts: {submission_df.shape[0]}, Number of comments: {comment_df.shape[0]}')
-    submission_df, comment_df = cache_dfs(submission_df, comment_df)
+
     all_df = pd.merge(submission_df, comment_df, on='permalink', how='outer')
 
     string_df = get_relevent_comments(all_df, make_regex(filter_keywords), search_in)
