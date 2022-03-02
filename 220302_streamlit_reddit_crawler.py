@@ -1,3 +1,9 @@
+reddit_id = st.secrets["reddit_id"]
+reddit_secret = st.secrets["reddit_secret"]
+reddit_agent = st.secrets["reddit_agent"]
+reddit_username = st.secrets["reddit_username"]
+reddit_password = st.secrets["reddit_password"]
+
 import streamlit as st
 
 # Basic
@@ -24,14 +30,9 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
 # Etc
-import warnings
-warnings.filterwarnings("ignore")
+# import warnings
+# warnings.filterwarnings("ignore")
 
-reddit_id = st.secrets["reddit_id"]
-reddit_secret = st.secrets["reddit_secret"]
-reddit_agent = st.secrets["reddit_agent"]
-reddit_username = st.secrets["reddit_username"]
-reddit_password = st.secrets["reddit_password"]
 
 st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_sidebar_state='auto')
 
@@ -94,6 +95,12 @@ if st.sidebar.button('Crawl!'):
     
 
 ###### Functions
+def reddit_2_str(df):
+    for col in df.columns:
+        if df[col].dtype=='O':
+            df[col] = df[col].astype(str)
+    return df
+
 @st.cache
 def get_reddit_submissions(reddit, query, topic='all', 
                            sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
@@ -120,9 +127,9 @@ def get_reddit_submissions(reddit, query, topic='all',
         submission_df = submission_df[submission_df['created']>=start_date].reset_index(drop=True)
     if end_date is not None:
         submission_df = submission_df[submission_df['created']<=(end_date+" 23:59:59")].reset_index(drop=True)
-    return submission_df
+    return reddit_2_str(submission_df)
 
-@st.cache(allow_output_mutation=True)
+@st.cache
 def get_reddit_comments(reddit, submission_df):
     comment_rows = []
     for i, r in submission_df.iterrows():
@@ -137,13 +144,7 @@ def get_reddit_comments(reddit, submission_df):
             comment.body])
 
     comment_df = pd.DataFrame(comment_rows, columns = ['permalink','comment_username', 'comment_upvotes', 'comment_id','comment_created', 'comment_text'])
-    return comment_df
-
-def reddit_2_str(df):
-    for col in df.columns:
-        if df[col].dtype=='O':
-            df[col] = df[col].astype(str)
-    return df
+    return reddit_2_str(comment_df)
 
 def make_regex(filter_keywords):
     filter_string = r''
@@ -159,25 +160,25 @@ def get_relevent_comments(all_df, regex, search_in=['comment_text']):
 def get_report(string_df, regex, search_in=['comment_text']):
     temp_post = None    
     if ['comment_text']==search_in:
-        st.write("Number of comments: {}".format(string_df.shape[0]))
+        st.write(f"Number of comments: {string_df.shape[0]}")
     else:
-        st.write("Number of posts: {}".format(string_df['title'].nunique()))
+        st.write(f"Number of posts: {string_df['title'].nunique()}")
     for i, r in string_df.iterrows():        
         if temp_post != string_df['text'][i]:
             temp_post = string_df['text'][i]
-            st.write("""
+            st.write(f"""
             ---
-            ## **ID {}. POST /r/{} | {}**
-            """.format(i, string_df['topic'][i], string_df['created'][i].strftime("%y-%m-%d")))
-            st.write('### TITLE:',string_df['title'][i])
+            ## **ID {i}. POST /r/{string_df['topic'][i]} | {string_df['created'][i].strftime("%y-%m-%d")}**
+            """)
+            st.write(f"### TITLE: {string_df['title'][i]}")
             if temp_post == "":
                 st.write(string_df['url'][i])
             else:
                 st.write(string_df['text'][i])
         if re.search(regex, str(string_df['comment_text'][i]).lower()):
-            st.write("""
-                ### ID {}. COMMENT | {}
-                """.format(i, string_df['comment_created'][i].strftime("%y-%m-%d")))
+            st.write(f"""
+                ### ID {i}. COMMENT | {string_df['comment_created'][i].strftime("%y-%m-%d")}
+                """)
             st.write(string_df['comment_text'][i])
 
 # Wordcloud
@@ -204,12 +205,8 @@ def make_excel(df):
     return processed_data
 
 def get_table_download_link(df, filename):
-    """Generates a link allowing the data in a given panda dataframe to be downloaded
-    in:  dataframe
-    out: href string
-    """
     val = make_excel(df)
-    b64 = base64.b64encode(val)  # val looks like b'...'
+    b64 = base64.b64encode(val)
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">{filename}</a>'
 
 def save_reddit(save_id, start_date, end_date, submission_df=None, comment_df=None, all_df=None, string_df=None, filter_keywords=None, search_in=None):
@@ -233,15 +230,11 @@ if st.session_state['run']:
     submission_df = get_reddit_submissions(reddit=reddit, query=query, topic=topic, 
                                sort_type=sort_type, time_filter=time_filter, num_posts = num_posts, 
                            start_date=start_date, end_date=end_date)
-    status_text.text('Converting...')
-    submission_df = reddit_2_str(submission_df)
     status_text.text(f'Done, Number of posts: {submission_df.shape[0]}')
     time.sleep(2)
 
     status_text.text('Crawling relevant comments...')
     comment_df = get_reddit_comments(reddit=reddit, submission_df=submission_df)
-    status_text.text('Converting...')
-    comment_df = reddit_2_str(comment_df)
     status_text.text(f'Done, Number of comments: {comment_df.shape[0]}')
     time.sleep(2)
     status_text.text(f'Number of posts: {submission_df.shape[0]}, Number of comments: {comment_df.shape[0]}')
