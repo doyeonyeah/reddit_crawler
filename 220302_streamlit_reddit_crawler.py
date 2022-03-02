@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
 # Etc
-# import warnings
-# warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
 
 reddit_id = st.secrets["reddit_id"]
 reddit_secret = st.secrets["reddit_secret"]
@@ -100,7 +100,7 @@ def reddit_2_str(df):
             df[col] = df[col].astype(str)
     return df
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def get_reddit_submissions(reddit, query, topic='all', 
                            sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
     subreddit = reddit.subreddit(topic)
@@ -132,6 +132,7 @@ def get_reddit_submissions(reddit, query, topic='all',
 def get_reddit_comments(reddit, submission_df):
     comment_rows = []
     for i, r in submission_df.iterrows():
+        status_text.text(f'Crawling relevant comments from {i}/{len(submission_df)} posts...')
         comment_submission = reddit.submission(url=submission_df["permalink"][i])
         comment_submission.comments.replace_more(limit=0)
         for comment in comment_submission.comments.list():
