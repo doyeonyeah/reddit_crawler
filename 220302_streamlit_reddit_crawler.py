@@ -128,7 +128,7 @@ def get_reddit_submissions(reddit, query, topic='all',
         submission_df = submission_df[submission_df['created']<=(end_date+" 23:59:59")].reset_index(drop=True)
     return reddit_2_str(submission_df)
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def get_reddit_comments(reddit, submission_df):
     comment_rows = []
     for i, r in submission_df.iterrows():
