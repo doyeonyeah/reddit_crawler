@@ -28,7 +28,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 reddit_id = st.secrets["reddit_id"]
-reddit_secret = st.secrets["reddit_secret
+reddit_secret = st.secrets["reddit_secret"]
 reddit_agent = st.secrets["reddit_agent"]
 reddit_username = st.secrets["reddit_username"]
 reddit_password = st.secrets["reddit_password"]
