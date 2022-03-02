@@ -27,9 +27,6 @@ from wordcloud import WordCloud
 import warnings
 warnings.filterwarnings("ignore")
 
-st.secrets["db_username"])
-st.write("DB password:", st.secrets["db_password"])
-
 reddit_id = st.secrets["reddit_id"]
 reddit_secret = st.secrets["reddit_secret
 reddit_agent = st.secrets["reddit_agent"]
