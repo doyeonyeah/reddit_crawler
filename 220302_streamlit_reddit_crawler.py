@@ -33,10 +33,8 @@ reddit_agent = st.secrets["reddit_agent"]
 reddit_username = st.secrets["reddit_username"]
 reddit_password = st.secrets["reddit_password"]
 
-st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_sidebar_state='auto')
-
-
 ###### INFO
+st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_sidebar_state='auto')
 st.title('Reddit Webcrawler :spider:')
 st.warning(
  """
@@ -44,8 +42,8 @@ st.warning(
  This is the Streamlit version of the Reddit crawler. You can search through Reddit and download posts and comments data in various formats.  
  Multiple inputs allowed for Subreddits, Search Query, Filter Words. (sep=",")  
  
- - As Reddit limits the number of resulting posts (250 posts it seems), try to fully utilize **Search Options** to retrieve the most relevant data.  
- - Reddit does not support scraping posts within certain date range. The dates input only filters the search result based on **Search Options**. 
+ - As Reddit limits the number of resulting posts (~250 posts per search), try to fully utilize **Search Options** to retrieve the most relevant data.  
+ - Reddit does not support scraping posts within certain date range. The dates input only filters the search result based on **Search Options**. Sorry. 
  """
 )
 
@@ -61,7 +59,7 @@ reddit = praw.Reddit(client_id=reddit_id,
                      requestor_kwargs={'session': session})
 
 
-###### Config Inputs
+###### Inputs
 st.sidebar.write("**Search Options**")
 topic = st.sidebar.text_input('Select Subreddits:', "all")
 topic = '+'.join([x.strip() for x in topic.split(',')])
@@ -242,7 +240,7 @@ def save_reddit(save_id, submission_df=None, comment_df=None, all_df=None, strin
     if string_df is not None:
         st.markdown(get_table_download_link(string_df, "{}_{}_filtered_{}_{}.xlsx".format(datetime.now().strftime("%y%m%d"),save_id, filter_keywords, search_in)), unsafe_allow_html=True)
 
-
+# Run Function
 @st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)
 def run(reddit, query, topic, sort_type, time_filter, num_posts, start_date, end_date):
     status_text.text('Crawling Reddit posts...')
