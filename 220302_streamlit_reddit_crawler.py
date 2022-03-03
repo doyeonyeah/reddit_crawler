@@ -40,11 +40,12 @@ st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_si
 st.title('Reddit Webcrawler :spider:')
 st.warning(
  """
- **Ver. 220302_1.3**   
- This is the Streamlit version of the Reddit crawler.  
- You can download crawled Reddit posts and comments data in various formats.
- 
+ **Ver. 220302_1.4**   
+ This is the Streamlit version of the Reddit crawler. You can search through Reddit and download posts and comments data in various formats.  
  Multiple inputs allowed for Subreddits, Search Query, Filter Words. (sep=",")  
+ 
+ - As Reddit limits the number of resulting posts (250 posts it seems), try to fully utilize **Search Options** to retrieve the most relevant data.  
+ - Reddit does not support scraping posts within certain date range. The dates input only filters the search result based on **Search Options**. 
  """
 )
 
@@ -61,6 +62,7 @@ reddit = praw.Reddit(client_id=reddit_id,
 
 
 ###### Config Inputs
+st.sidebar.write("**Search Options**")
 topic = st.sidebar.text_input('Select Subreddits:', "all")
 topic = '+'.join([x.strip() for x in topic.split(',')])
 if topic=="":
@@ -70,12 +72,36 @@ query = st.sidebar.text_input('Search Query:')
 save_id = query.translate(str.maketrans(' ', '_', string.punctuation))
 query = [x.strip() for x in query.split(',')]
 
-sort_type = st.sidebar.selectbox('Sort Type:', ['relevance', 'new', 'hot', 'top'])
+sort_type = st.sidebar.selectbox('Sort Type:', ['relevance', 'new', 'hot', 'top', 'comments'])
 
-start_date = st.sidebar.date_input('Start Date:', datetime.today().date()-dateutil.relativedelta.relativedelta(months=1)).strftime("%Y-%m-%d")
-end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime("%Y-%m-%d")
+time_filter = st.sidebar.select_slider('Time:', ['all', 'year', 'month', 'week', 'day', 'hour'])
+
+if 'run' not in st.session_state:
+    st.session_state['run'] = False
+if st.sidebar.button('Crawl!'):
+    st.session_state['run'] = True
+
 
 st.sidebar.write("---")
+st.sidebar.write("**Filter Options**")
+
+if time_filter == 'all':
+    date_before = dateutil.relativedelta.relativedelta(years=5)
+if time_filter == 'year':
+    date_before = dateutil.relativedelta.relativedelta(years=1)
+if time_filter == 'month':
+    date_before = dateutil.relativedelta.relativedelta(months=1)
+if time_filter == 'week':
+    date_before = dateutil.relativedelta.relativedelta(days=7)
+if time_filter == 'day':
+    date_before = dateutil.relativedelta.relativedelta(days=1)
+if time_filter == 'hour':
+    date_before = dateutil.relativedelta.relativedelta(days=1)
+
+
+start_date = st.sidebar.date_input('Start Date:', datetime.today().date()-date_before).strftime("%Y-%m-%d")
+end_date = st.sidebar.date_input('End Date:', datetime.today().date()).strftime("%Y-%m-%d")
+
 
 filter_keywords = st.sidebar.text_input('Filter Words:')
 filter_keywords = [x.strip() for x in filter_keywords.split(',')]
@@ -84,13 +110,8 @@ if filter_keywords=="":
 
 search_in = st.sidebar.multiselect('Search In:', ['comment_text', 'title', 'text'], default=["comment_text"])  
 
-time_filter = 'all' # default
 num_posts = None # default
 
-if 'run' not in st.session_state:
-    st.session_state['run'] = False
-if st.sidebar.button('Crawl!'):
-    st.session_state['run'] = True
     
 
 ###### Functions
@@ -102,7 +123,7 @@ def reddit_2_str(df):
 
 @st.cache
 def get_reddit_submissions(reddit, query, topic='all', 
-                           sort_type='new', time_filter='all', num_posts = None, start_date=None, end_date=None):
+                           sort_type='relevance', time_filter='all', num_posts = None, start_date=None, end_date=None):
     subreddit = reddit.subreddit(topic)
     submission_rows=[]
     for keyword in query:
@@ -209,18 +230,17 @@ def get_table_download_link(df, filename):
     b64 = base64.b64encode(val)
     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">{filename}</a>'
 
-def save_reddit(save_id, start_date, end_date, submission_df=None, comment_df=None, all_df=None, string_df=None, filter_keywords=None, search_in=None):
-    save_id_date = save_id+'_'+datetime.strftime(datetime.strptime(start_date, '%Y-%m-%d'), '%y%m%d')+'-'+datetime.strftime(datetime.strptime(end_date, '%Y-%m-%d'), '%y%m%d')
+def save_reddit(save_id, submission_df=None, comment_df=None, all_df=None, string_df=None, filter_keywords=None, search_in=None):
     if submission_df is not None:
-        st.markdown(get_table_download_link(submission_df, "{}_{}_posts.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(submission_df, "{}_{}_posts.xlsx".format(datetime.now().strftime("%y%m%d"),save_id)), unsafe_allow_html=True)
     if comment_df is not None:    
-        st.markdown(get_table_download_link(comment_df, "{}_{}_comments.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(comment_df, "{}_{}_comments.xlsx".format(datetime.now().strftime("%y%m%d"),save_id)), unsafe_allow_html=True)
     if all_df is not None:
-        st.markdown(get_table_download_link(all_df, "{}_{}_all.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(all_df, "{}_{}_all.xlsx".format(datetime.now().strftime("%y%m%d"),save_id)), unsafe_allow_html=True)
         st.markdown(get_table_download_link(all_df.set_index(['search_word', 'topic', 'title', 'username', 'upvotes', 'id', 
-                      'url', 'permalink', 'num_comments', 'created', 'text', 'comment_text']), "{}_{}_all_merged.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date)), unsafe_allow_html=True)
+                      'url', 'permalink', 'num_comments', 'created', 'text', 'comment_text']), "{}_{}_all_merged.xlsx".format(datetime.now().strftime("%y%m%d"),save_id)), unsafe_allow_html=True)
     if string_df is not None:
-        st.markdown(get_table_download_link(string_df, "{}_{}_filtered_{}_{}.xlsx".format(datetime.now().strftime("%y%m%d"),save_id_date, filter_keywords, search_in)), unsafe_allow_html=True)
+        st.markdown(get_table_download_link(string_df, "{}_{}_filtered_{}_{}.xlsx".format(datetime.now().strftime("%y%m%d"),save_id, filter_keywords, search_in)), unsafe_allow_html=True)
 
 
 @st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)
@@ -267,7 +287,7 @@ if st.session_state['run']:
 
     if st.checkbox('Create Save Files'):
         
-        save_reddit(save_id, start_date, end_date, submission_df, comment_df, all_df, string_df, filter_keywords, search_in)
+        save_reddit(save_id, submission_df, comment_df, all_df, string_df, filter_keywords, search_in)
         st.write('#### Files Created! :heart:')
         
     if st.checkbox('Create WordCloud'):
