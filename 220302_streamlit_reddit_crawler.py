@@ -35,15 +35,15 @@ reddit_password = st.secrets["reddit_password"]
 
 ###### INFO
 st.set_page_config(page_title='Reddit Crawler', page_icon=":spider:", initial_sidebar_state='auto')
-st.title('Reddit Webcrawler :spider:')
+st.title('Reddit Crawler :spider:')
 st.warning(
  """
- **Ver. 220302_1.4**   
+ **Ver. 220304_1.4**   
  This is the Streamlit version of the Reddit crawler. You can search through Reddit and download posts and comments data in various formats.  
  Multiple inputs allowed for Subreddits, Search Query, Filter Words. (sep=",")  
  
  - As Reddit limits the number of resulting posts (~250 posts per search), try to fully utilize **Search Options** to retrieve the most relevant data.  
- - Reddit does not support scraping posts within certain date range. The dates input only filters the search result based on **Search Options**. Sorry. 
+ - Reddit's policy does not support scraping posts within certain date range. The dates input only filters the search result based on **Search Options**. 
  """
 )
 
@@ -187,7 +187,7 @@ def get_report(string_df, regex, search_in=['comment_text']):
             temp_post = string_df['text'][i]
             st.write(f"""
             ---
-            ## **ID {i}. POST /r/{string_df['topic'][i]} | {string_df['created'][i].strftime("%y-%m-%d")}**
+            ## **ID {i}. [POST]({string_df['permalink'][i]}?target=_blank) /r/{string_df['topic'][i]} | {string_df['created'][i].strftime("%y-%m-%d")}**
             """)
             st.write(f"### TITLE: {string_df['title'][i]}")
             if temp_post == "":
